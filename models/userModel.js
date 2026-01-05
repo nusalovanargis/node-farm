@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
-// name, email, photo, password, passwordConfirm
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -18,15 +17,15 @@ const userSchema = new mongoose.Schema({
   photo: String,
   password: {
     type: String,
-    required: true,
-    minLength: 8,
+    required: [true, 'Please provide a password'],
+    minlength: 8,
     select: false,
   },
   passwordConfirm: {
     type: String,
     required: [true, 'Please confirm your password'],
     // This only works on CREATE and SAVE!!!
-    validator: {
+    validate: {
       validator: function (el) {
         return el === this.password;
       },
@@ -35,16 +34,17 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.pre('save', async function (next) {
+// ✅ Async middleware: next YOXDUR, next() YOXDUR
+userSchema.pre('save', async function () {
   // Only run this function if password was actually modified
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) return;
+
   // Hash the password with cost of 12
   this.password = await bcrypt.hash(this.password, 12);
+
   // Delete passwordConfirm field
   this.passwordConfirm = undefined;
-  next();
 });
 
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;
